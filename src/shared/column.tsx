@@ -218,11 +218,11 @@ export function Column({ column }: { column: TColumn }) {
           >
             <CardList column={column} />
             {/* TODO: swap this for invisible over last item to avoid jumps */}
-            {state.type === 'is-card-over' &&
+            {/* {state.type === 'is-card-over' &&
             state.dragging.columnId !== column.id &&
             !state.isOverChildCard ? (
               <CardShadow card={state.dragging.card} />
-            ) : null}
+            ) : null} */}
           </div>
           <div className="flex flex-row gap-2 p-3">
             <button

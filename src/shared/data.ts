@@ -18,16 +18,19 @@ export type TCardData = {
   [cardKey]: true;
   card: TCard;
   columnId: string;
+  rect: DOMRect;
 };
 
 export function getCardData({
   card,
+  rect,
   columnId,
 }: Omit<TCardData, typeof cardKey> & { columnId: string }): TCardData {
   return {
     [cardKey]: true,
     card,
     columnId,
+    rect,
   };
 }
 

@@ -9,6 +9,11 @@ import { setCustomNativeDragPreview } from '@atlaskit/pragmatic-drag-and-drop/el
 import { forwardRef, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import invariant from 'tiny-invariant';
+import {
+  type Edge,
+  attachClosestEdge,
+  extractClosestEdge,
+} from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
 
 import { isSafari } from '@/shared/is-safari';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
@@ -22,7 +27,12 @@ type TCardState =
       type: 'is-dragging';
     }
   | {
+      type: 'is-dragging-left-self';
+    }
+  | {
       type: 'is-over';
+      dragging: DOMRect;
+      closestEdge: Edge;
     }
   | {
       type: 'preview';
@@ -36,7 +46,8 @@ const stateStyles: { [Key in TCardState['type']]: string } = {
   idle: 'bg-slate-700 hover:outline outline-2 outline-neutral-50 cursor-grab',
   'is-dragging': 'bg-slate-700 opacity-40',
   preview: 'bg-slate-700 bg-blue-100',
-  'is-over': 'bg-slate-900',
+  'is-over': 'bg-slate-900 pointer-events-none',
+  'is-dragging-left-self': 'hidden',
 };
 
 const CardInner = forwardRef<
@@ -47,29 +58,46 @@ const CardInner = forwardRef<
   }
 >(function CardInner({ card, state }, ref) {
   return (
-    <div
-      ref={ref}
-      className={`flex-shrink-0 rounded p-2 text-slate-300 ${stateStyles[state.type]}`}
-      style={
-        state.type === 'preview'
-          ? {
-              width: state.dragging.width,
-              height: state.dragging.height,
-              transform: !isSafari() ? 'rotate(4deg)' : undefined,
-            }
-          : undefined
-      }
-    >
-      <div className={`${state.type === 'is-over' ? 'invisible' : ''}`}>{card.description}</div>
-    </div>
+    <>
+      {state.type === 'is-over' && state.closestEdge === 'bottom' ? (
+        <div
+          key={`${card.id}-shadow`}
+          style={{ height: state.dragging.height, width: state.dragging.width }}
+          className="flex-shrink-0 rounded bg-red-800"
+        />
+      ) : null}
+      <div
+        ref={ref}
+        key={card.id}
+        className={`flex-shrink-0 rounded p-2 text-slate-300 ${stateStyles[state.type]}`}
+        style={
+          state.type === 'preview'
+            ? {
+                width: state.dragging.width,
+                height: state.dragging.height,
+                transform: !isSafari() ? 'rotate(4deg)' : undefined,
+              }
+            : undefined
+        }
+      >
+        <div>{card.description}</div>
+      </div>
+      {state.type === 'is-over' && state.closestEdge === 'top' ? (
+        <div
+          key={`${card.id}-shadow`}
+          style={{ height: state.dragging.height, width: state.dragging.width }}
+          className="flex-shrink-0 rounded bg-red-800"
+        />
+      ) : null}
+    </>
   );
 });
 
-const isOver: TCardState = { type: 'is-over' };
+// const isOver: TCardState = { type: 'is-over' };
 
-export function CardShadow({ card }: { card: TCard }) {
-  return <CardInner state={isOver} card={card} />;
-}
+// export function CardShadow({ card }: { card: TCard }) {
+//   return <CardInner state={isOver} card={card} />;
+// }
 
 export function Card({ card, columnId }: { card: TCard; columnId: string }) {
   console.log('render', card.id);
@@ -81,7 +109,8 @@ export function Card({ card, columnId }: { card: TCard; columnId: string }) {
     return combine(
       draggable({
         element,
-        getInitialData: () => getCardData({ card, columnId }),
+        getInitialData: ({ element }) =>
+          getCardData({ card, columnId, rect: element.getBoundingClientRect() }),
         onGenerateDragPreview({ nativeSetDragImage, location, source }) {
           const data = source.data;
           invariant(isCardData(data));
@@ -106,23 +135,55 @@ export function Card({ card, columnId }: { card: TCard; columnId: string }) {
       }),
       dropTargetForElements({
         element,
-        getIsSticky: () => true,
+        // getIsSticky: () => true,
         canDrop: isDraggingACard,
-        getData: () => getCardData({ card, columnId }),
-        onDragEnter({ source }) {
+        // TODO: drop targets don't need to publish rect!
+        getData: ({ element, input }) => {
+          console.log('get data');
+          const data = getCardData({ card, columnId, rect: element.getBoundingClientRect() });
+          const result = attachClosestEdge(data, {
+            input,
+            allowedEdges: ['top', 'bottom'],
+            element,
+          });
+          console.log({ closestEdge: extractClosestEdge(result) });
+          return result;
+        },
+        onDragEnter({ source, self }) {
           if (!isCardData(source.data)) {
             return;
           }
           if (source.data.card.id === card.id) {
             return;
           }
-          setState({ type: 'is-over' });
+          const closestEdge = extractClosestEdge(self.data);
+          if (!closestEdge) {
+            return;
+          }
+
+          setState({ type: 'is-over', dragging: source.data.rect, closestEdge });
+        },
+        onDrag({ source, self }) {
+          if (!isCardData(source.data)) {
+            return;
+          }
+          if (source.data.card.id === card.id) {
+            return;
+          }
+          const closestEdge = extractClosestEdge(self.data);
+          if (!closestEdge) {
+            return;
+          }
+
+          console.log('drag', closestEdge);
+          setState({ type: 'is-over', dragging: source.data.rect, closestEdge });
         },
         onDragLeave({ source }) {
           if (!isCardData(source.data)) {
             return;
           }
           if (source.data.card.id === card.id) {
+            setState({ type: 'is-dragging-left-self' });
             return;
           }
           setState(idle);
@@ -135,7 +196,9 @@ export function Card({ card, columnId }: { card: TCard; columnId: string }) {
   }, [card, columnId]);
   return (
     <>
-      <CardInner ref={ref} state={state} card={card} />
+      {state.type === 'is-dragging-left-self' ? null : (
+        <CardInner ref={ref} state={state} card={card} />
+      )}
       {state.type === 'preview'
         ? createPortal(<CardInner state={state} card={card} />, state.container)
         : null}
