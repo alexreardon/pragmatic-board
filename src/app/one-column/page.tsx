@@ -18,7 +18,7 @@ function getInitialData(): TBoard {
   })();
 
   const columns: TColumn[] = [
-    { id: 'column:a', title: 'Column A', cards: getCards({ amount: 60 }) },
+    { id: 'column:a', title: 'Column A', cards: getCards({ amount: 300 }) },
   ];
 
   return {

@@ -6,7 +6,15 @@ import {
   ElementEventBasePayload,
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { Copy, Ellipsis, Plus } from 'lucide-react';
-import { memo, useContext, useEffect, useRef, useState } from 'react';
+import {
+  CSSProperties,
+  memo,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import invariant from 'tiny-invariant';
 
 import { autoScrollForElements } from '@/pdnd-auto-scroll/entry-point/element';
@@ -71,6 +79,7 @@ export function Column({ column }: { column: TColumn }) {
   const innerRef = useRef<HTMLDivElement | null>(null);
   const { settings } = useContext(SettingsContext);
   const [state, setState] = useState<TColumnState>(idle);
+  const [hitboxHeight, setHitboxHeight] = useState<number | null>(null);
 
   useEffect(() => {
     const outer = outerFullHeightRef.current;
@@ -213,6 +222,15 @@ export function Column({ column }: { column: TColumn }) {
     );
   }, [column, settings]);
 
+  useEffect(() => {
+    const scrollable = scrollableRef.current;
+    invariant(scrollable);
+    const box = scrollable.getBoundingClientRect();
+    const size = Math.min(box.height * 0.25, 180);
+    console.log({ size });
+    setHitboxHeight(size);
+  }, [settings]);
+
   return (
     <div className="flex w-72 flex-shrink-0 select-none flex-col" ref={outerFullHeightRef}>
       <div
@@ -240,6 +258,21 @@ export function Column({ column }: { column: TColumn }) {
               </div>
             ) : null}
           </div>
+          {hitboxHeight != null ? (
+            <div
+              className="relative h-0"
+              style={{ '--hitbox-height': `${hitboxHeight}px` } as CSSProperties}
+            >
+              <div className="pointer-events-none absolute bottom-0 flex h-[--hitbox-height] w-full flex-col font-bold text-black opacity-80">
+                <div className="flex h-[50%] items-center justify-center bg-green-200">
+                  Acceleration ↓
+                </div>
+                <div className="flex h-[50%] items-center justify-center bg-green-400">
+                  Max speed 🚀
+                </div>
+              </div>
+            </div>
+          ) : null}
           <div className="flex flex-row gap-2 p-3">
             <button
               type="button"
