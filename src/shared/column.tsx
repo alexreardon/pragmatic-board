@@ -72,6 +72,12 @@ const CardList = memo(function CardList({ column }: { column: TColumn }) {
   return column.cards.map((card) => <Card key={card.id} card={card} columnId={column.id} />);
 });
 
+type THitboxes = {
+  'over-element-accelerate': DOMRect;
+  'over-element-max-speed': DOMRect;
+  overflow: DOMRect;
+};
+
 export function Column({ column }: { column: TColumn }) {
   const scrollableRef = useRef<HTMLDivElement | null>(null);
   const outerFullHeightRef = useRef<HTMLDivElement | null>(null);
@@ -79,7 +85,7 @@ export function Column({ column }: { column: TColumn }) {
   const innerRef = useRef<HTMLDivElement | null>(null);
   const { settings } = useContext(SettingsContext);
   const [state, setState] = useState<TColumnState>(idle);
-  const [hitboxHeight, setHitboxHeight] = useState<number | null>(null);
+  const [hitboxes, setHitboxes] = useState<THitboxes | null>(null);
 
   useEffect(() => {
     const outer = outerFullHeightRef.current;
@@ -207,14 +213,14 @@ export function Column({ column }: { column: TColumn }) {
         getOverflow() {
           return {
             fromTopEdge: {
-              top: 1000,
-              right: 0,
-              left: 0,
+              top: 100,
+              right: 100,
+              left: 100,
             },
             fromBottomEdge: {
-              bottom: 1000,
-              right: 0,
-              left: 0,
+              bottom: 100,
+              right: 100,
+              left: 100,
             },
           };
         },
@@ -223,70 +229,143 @@ export function Column({ column }: { column: TColumn }) {
   }, [column, settings]);
 
   useEffect(() => {
-    const scrollable = scrollableRef.current;
-    invariant(scrollable);
-    const box = scrollable.getBoundingClientRect();
-    const size = Math.min(box.height * 0.25, 180);
-    console.log({ size });
-    setHitboxHeight(size);
+    function update() {
+      const scrollable = scrollableRef.current;
+      invariant(scrollable);
+      const rect = scrollable.getBoundingClientRect();
+      const overElementHitboxHeight = Math.min(rect.height * 0.25, 180);
+      const hitboxes: THitboxes = {
+        'over-element-accelerate': DOMRect.fromRect({
+          x: rect.x,
+          y: rect.bottom - overElementHitboxHeight,
+          height: overElementHitboxHeight / 2,
+          width: rect.width,
+        }),
+        'over-element-max-speed': DOMRect.fromRect({
+          x: rect.x,
+          y: rect.bottom - overElementHitboxHeight / 2,
+          height: overElementHitboxHeight / 2,
+          width: rect.width,
+        }),
+        overflow: DOMRect.fromRect({
+          x: rect.x - 100,
+          y: rect.bottom - overElementHitboxHeight,
+          width: rect.width + 200,
+          height: overElementHitboxHeight + 100,
+        }),
+      };
+      setHitboxes(hitboxes);
+    }
+    let frameId: number | null = null;
+    function schedule() {
+      frameId = requestAnimationFrame(() => {
+        frameId = null;
+        update();
+        schedule();
+      });
+    }
+
+    schedule();
+
+    return function cleanup() {
+      if (frameId != null) {
+        cancelAnimationFrame(frameId);
+        frameId = null;
+      }
+    };
+
+    // const size = Math.min(box.height * 0.25, 180);
+    // console.log({ size });
+    // setScrollableRect(size);
   }, [settings]);
 
   return (
-    <div className="flex w-72 flex-shrink-0 select-none flex-col" ref={outerFullHeightRef}>
-      <div
-        className={`flex max-h-full flex-col rounded-lg bg-slate-800 text-neutral-50 ${stateStyles[state.type]}`}
-        ref={innerRef}
-      >
-        {/* Extra wrapping element to make it easy to toggle visibility of content when a column is dragging over */}
+    <>
+      <div className="flex w-72 flex-shrink-0 select-none flex-col" ref={outerFullHeightRef}>
         <div
-          className={`flex max-h-full flex-col ${state.type === 'is-column-over' ? 'invisible' : ''}`}
+          className={`flex max-h-full flex-col rounded-lg bg-slate-800 text-neutral-50 ${stateStyles[state.type]}`}
+          ref={innerRef}
         >
-          <div className="flex flex-row items-center justify-between p-3 pb-2" ref={headerRef}>
-            <div className="pl-2 font-bold leading-4">{column.title}</div>
-            <button type="button" className="rounded p-2 hover:bg-slate-700 active:bg-slate-600">
-              <Ellipsis size={16} />
-            </button>
-          </div>
+          {/* Extra wrapping element to make it easy to toggle visibility of content when a column is dragging over */}
           <div
-            className="flex flex-col overflow-y-auto [overflow-anchor:none] [scrollbar-color:theme(colors.slate.600)_theme(colors.slate.700)] [scrollbar-width:thin]"
-            ref={scrollableRef}
+            className={`flex max-h-full flex-col ${state.type === 'is-column-over' ? 'invisible' : ''}`}
           >
-            <CardList column={column} />
-            {state.type === 'is-card-over' && !state.isOverChildCard ? (
-              <div className="flex-shrink-0 px-3 py-1">
-                <CardShadow dragging={state.dragging} />
-              </div>
-            ) : null}
-          </div>
-          {hitboxHeight != null ? (
-            <div
-              className="relative h-0"
-              style={{ '--hitbox-height': `${hitboxHeight}px` } as CSSProperties}
-            >
-              <div className="pointer-events-none absolute bottom-0 flex h-[--hitbox-height] w-full flex-col font-bold text-black opacity-80">
-                <div className="flex h-[50%] items-center justify-center bg-green-200">
-                  Acceleration ↓
-                </div>
-                <div className="flex h-[50%] items-center justify-center bg-green-400">
-                  Max speed 🚀
-                </div>
-              </div>
+            <div className="flex flex-row items-center justify-between p-3 pb-2" ref={headerRef}>
+              <div className="pl-2 font-bold leading-4">{column.title}</div>
+              <button type="button" className="rounded p-2 hover:bg-slate-700 active:bg-slate-600">
+                <Ellipsis size={16} />
+              </button>
             </div>
-          ) : null}
-          <div className="flex flex-row gap-2 p-3">
-            <button
-              type="button"
-              className="flex flex-grow flex-row gap-1 rounded p-2 hover:bg-slate-700 active:bg-slate-600"
+            <div
+              className="flex flex-col overflow-y-auto [overflow-anchor:none] [scrollbar-color:theme(colors.slate.600)_theme(colors.slate.700)] [scrollbar-width:thin]"
+              ref={scrollableRef}
             >
-              <Plus size={16} />
-              <div className="leading-4">Add a card</div>
-            </button>
-            <button type="button" className="rounded p-2 hover:bg-slate-700 active:bg-slate-600">
-              <Copy size={16} />
-            </button>
+              <CardList column={column} />
+              {state.type === 'is-card-over' && !state.isOverChildCard ? (
+                <div className="flex-shrink-0 px-3 py-1">
+                  <CardShadow dragging={state.dragging} />
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex flex-row gap-2 p-3">
+              <button
+                type="button"
+                className="flex flex-grow flex-row gap-1 rounded p-2 hover:bg-slate-700 active:bg-slate-600"
+              >
+                <Plus size={16} />
+                <div className="leading-4">Add a card</div>
+              </button>
+              <button type="button" className="rounded p-2 hover:bg-slate-700 active:bg-slate-600">
+                <Copy size={16} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+      {hitboxes != null ? (
+        <>
+          <div
+            style={
+              {
+                '--top': `${hitboxes['overflow'].top}px`,
+                '--left': `${hitboxes['overflow'].left}px`,
+                '--height': `${hitboxes['overflow'].height}px`,
+                '--width': `${hitboxes['overflow'].width}px`,
+              } as CSSProperties
+            }
+            className="pointer-events-none fixed left-[--left] top-[--top] flex h-[--height] w-[--width] flex-col items-center justify-end border-2 border-red-800 bg-red-200 pb-4 font-bold text-red-500 opacity-80"
+          >
+            Overflow
+          </div>
+          <div
+            style={
+              {
+                '--top': `${hitboxes['over-element-accelerate'].top}px`,
+                '--left': `${hitboxes['over-element-accelerate'].left}px`,
+                '--height': `${hitboxes['over-element-accelerate'].height}px`,
+                '--width': `${hitboxes['over-element-accelerate'].width}px`,
+              } as CSSProperties
+            }
+            className="pointer-events-none fixed left-[--left] top-[--top] flex h-[--height] w-[--width] flex-col items-center justify-center border bg-green-200 font-bold text-black opacity-80"
+          >
+            Acceleration ↓
+          </div>
+          <div
+            style={
+              {
+                '--top': `${hitboxes['over-element-max-speed'].top}px`,
+                '--left': `${hitboxes['over-element-max-speed'].left}px`,
+                '--height': `${hitboxes['over-element-max-speed'].height}px`,
+                '--width': `${hitboxes['over-element-max-speed'].width}px`,
+              } as CSSProperties
+            }
+            className="pointer-events-none fixed left-[--left] top-[--top] flex h-[--height] w-[--width] flex-col items-center justify-center bg-green-400 font-bold text-black opacity-80"
+          >
+            Max speed
+          </div>
+        </>
+      ) : null}
+    </>
   );
 }
