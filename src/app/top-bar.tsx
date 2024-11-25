@@ -23,22 +23,24 @@ export function TopBar() {
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState<boolean>(false);
   const settingsDialogRef = useRef<HTMLDivElement | null>(null);
   const settingsTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const { settings } = useContext(SettingsContext);
+  const { settings, update } = useContext(SettingsContext);
 
   useEffect(() => {
     return bindAll(window, [
       {
         type: 'keydown',
         listener(event) {
-          if (event.key !== 'Escape') {
+          if (event.key === 'Escape') {
+            if (isSettingsDialogOpen) {
+              setIsSettingsDialogOpen(false);
+              return;
+            }
+            setIsTopBarExpanded((current) => !current);
             return;
           }
-
-          if (isSettingsDialogOpen) {
-            setIsSettingsDialogOpen(false);
-            return;
+          if (event.key === 'h') {
+            update({ areHitboxesVisible: !settings.areHitboxesVisible });
           }
-          setIsTopBarExpanded((current) => !current);
         },
       },
       {
@@ -69,7 +71,7 @@ export function TopBar() {
         },
       },
     ]);
-  }, [isTopBarExpanded, isSettingsDialogOpen]);
+  }, [isTopBarExpanded, isSettingsDialogOpen, settings]);
 
   return (
     <>

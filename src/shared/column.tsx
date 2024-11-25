@@ -229,7 +229,10 @@ export function Column({ column }: { column: TColumn }) {
   }, [column, settings]);
 
   useEffect(() => {
-    return;
+    if (!settings.areHitboxesVisible) {
+      setHitboxes(null);
+      return;
+    }
     function update() {
       const scrollable = scrollableRef.current;
       invariant(scrollable);
@@ -278,7 +281,7 @@ export function Column({ column }: { column: TColumn }) {
     // const size = Math.min(box.height * 0.25, 180);
     // console.log({ size });
     // setScrollableRect(size);
-  }, []);
+  }, [settings]);
 
   return (
     <>
@@ -335,9 +338,9 @@ export function Column({ column }: { column: TColumn }) {
                 '--width': `${hitboxes['overflow'].width}px`,
               } as CSSProperties
             }
-            className="pointer-events-none fixed left-[--left] top-[--top] flex h-[--height] w-[--width] flex-col items-center justify-center border-2 border-red-800 bg-red-200 font-bold text-red-500 opacity-80"
+            className="pointer-events-none fixed left-[--left] top-[--top] flex h-[--height] w-[--width] flex-col items-center justify-center bg-red-200 font-bold text-red-500 opacity-80"
           >
-            Overflow 🤩
+            {/* Overflow 🤩 */}
           </div>
           <div
             style={
@@ -350,7 +353,7 @@ export function Column({ column }: { column: TColumn }) {
             }
             className="pointer-events-none fixed left-[--left] top-[--top] flex h-[--height] w-[--width] flex-col items-center justify-center border bg-green-200 font-bold text-black opacity-80"
           >
-            Acceleration ↓
+            {/* Acceleration ↓ */}
           </div>
           <div
             style={
@@ -363,7 +366,7 @@ export function Column({ column }: { column: TColumn }) {
             }
             className="pointer-events-none fixed left-[--left] top-[--top] flex h-[--height] w-[--width] flex-col items-center justify-center bg-green-400 font-bold text-black opacity-80"
           >
-            Max speed 🚀
+            {/* Max speed 🚀 */}
           </div>
         </>
       ) : null}

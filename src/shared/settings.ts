@@ -30,6 +30,11 @@ export const fields = {
     title: 'Drop FPS 🔥',
     description: 'Start heavy process that will cause the frame rate on the page to drop',
   },
+  areHitboxesVisible: {
+    type: 'boolean',
+    title: 'Are hitboxes visible',
+    description: 'Make hitboxes visible',
+  },
   isOverElementAutoScrollEnabled: {
     type: 'boolean',
     title: 'Over element auto scrolling',

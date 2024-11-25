@@ -279,6 +279,10 @@ export function Board({ initial }: { initial: TBoard }) {
   }, [data, settings]);
 
   useEffect(() => {
+    if (!settings.areHitboxesVisible) {
+      setHitboxes(null);
+      return;
+    }
     function update() {
       const scrollable = scrollableRef.current;
       invariant(scrollable);
@@ -304,8 +308,7 @@ export function Board({ initial }: { initial: TBoard }) {
           height: window.innerHeight,
         }),
       };
-      console.log({ rect, window: window.innerWidth });
-      // setHitboxes(hitboxes);
+      setHitboxes(hitboxes);
     }
     let frameId: number | null = null;
     function schedule() {
@@ -328,7 +331,7 @@ export function Board({ initial }: { initial: TBoard }) {
     // const size = Math.min(box.height * 0.25, 180);
     // console.log({ size });
     // setScrollableRect(size);
-  }, []);
+  }, [settings]);
 
   return (
     <>
@@ -353,7 +356,7 @@ export function Board({ initial }: { initial: TBoard }) {
                 '--width': `${hitboxes['overflow'].width}px`,
               } as CSSProperties
             }
-            className="pointer-events-none fixed left-[--left] top-[--top] flex h-[--height] w-[--width] flex-col items-end justify-center border-2 border-red-800 bg-red-200 font-bold text-red-500 opacity-80"
+            className="pointer-events-none fixed left-[--left] top-[--top] flex h-[--height] w-[--width] flex-col items-end justify-center bg-red-200 font-bold text-red-500 opacity-80"
           >
             {/* Overflow */}
           </div>

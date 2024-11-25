@@ -20,6 +20,7 @@ const defaultSettings: TSettings = {
   isFPSPanelEnabled: false,
   isCPUBurnEnabled: false,
   isOverflowScrollingEnabled: true,
+  areHitboxesVisible: true,
 };
 
 export const SettingsContext = createContext<TSettingsContext>({
