@@ -19,18 +19,16 @@ function getInitialData(): TBoard {
 
   const columns: TColumn[] = [
     { id: 'column:a', title: 'Column A', cards: getCards({ amount: 60 }) },
-    { id: 'column:b', title: 'Column B', cards: getCards({ amount: 4 }) },
-    { id: 'column:c', title: 'Column C', cards: getCards({ amount: 4 }) },
-    { id: 'column:d', title: 'Column D', cards: getCards({ amount: 4 }) },
-    { id: 'column:e', title: 'Column E', cards: getCards({ amount: 4 }) },
-    { id: 'column:f', title: 'Column F', cards: getCards({ amount: 4 }) },
-    { id: 'column:g', title: 'Column G', cards: getCards({ amount: 4 }) },
-    { id: 'column:h', title: 'Column H', cards: getCards({ amount: 4 }) },
-    { id: 'column:i', title: 'Column I', cards: getCards({ amount: 4 }) },
   ];
 
+  const more: TColumn[] = Array.from({ length: 30 }, (_, index) => ({
+    id: `column:${index}`,
+    title: `Column ${index}`,
+    cards: getCards({ amount: Math.round(4 + Math.random() * 4) }),
+  }));
+
   return {
-    columns,
+    columns: [...columns, ...more],
   };
 }
 

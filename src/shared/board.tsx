@@ -6,7 +6,7 @@ import { reorderWithEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/util/r
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { reorder } from '@atlaskit/pragmatic-drag-and-drop/reorder';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { CSSProperties, useContext, useEffect, useRef, useState } from 'react';
 import invariant from 'tiny-invariant';
 import { Column } from './column';
 import {
@@ -21,10 +21,17 @@ import {
 import { SettingsContext } from './settings-context';
 import { unsafeOverflowAutoScrollForElements } from '@/pdnd-auto-scroll/entry-point/unsafe-overflow/element';
 
+type THitboxes = {
+  'over-element-accelerate': DOMRect;
+  'over-element-max-speed': DOMRect;
+  overflow: DOMRect;
+};
+
 export function Board({ initial }: { initial: TBoard }) {
   const [data, setData] = useState(initial);
   const scrollableRef = useRef<HTMLDivElement | null>(null);
   const { settings } = useContext(SettingsContext);
+  const [hitboxes, setHitboxes] = useState<THitboxes | null>(null);
 
   useEffect(() => {
     const element = scrollableRef.current;
@@ -271,16 +278,113 @@ export function Board({ initial }: { initial: TBoard }) {
     );
   }, [data, settings]);
 
+  useEffect(() => {
+    function update() {
+      const scrollable = scrollableRef.current;
+      invariant(scrollable);
+      const rect = scrollable.getBoundingClientRect();
+      const overElementHitboxWidth = Math.min(rect.width * 0.25, 180);
+      const hitboxes: THitboxes = {
+        'over-element-accelerate': DOMRect.fromRect({
+          x: rect.right - overElementHitboxWidth,
+          y: rect.top,
+          height: rect.height,
+          width: overElementHitboxWidth / 2,
+        }),
+        'over-element-max-speed': DOMRect.fromRect({
+          x: rect.right - overElementHitboxWidth / 2,
+          y: rect.top,
+          height: rect.height,
+          width: overElementHitboxWidth / 2,
+        }),
+        overflow: DOMRect.fromRect({
+          x: rect.right - overElementHitboxWidth,
+          y: 0,
+          width: window.innerWidth - rect.right + overElementHitboxWidth,
+          height: window.innerHeight,
+        }),
+      };
+      console.log({ rect, window: window.innerWidth });
+      // setHitboxes(hitboxes);
+    }
+    let frameId: number | null = null;
+    function schedule() {
+      frameId = requestAnimationFrame(() => {
+        frameId = null;
+        update();
+        schedule();
+      });
+    }
+
+    schedule();
+
+    return function cleanup() {
+      if (frameId != null) {
+        cancelAnimationFrame(frameId);
+        frameId = null;
+      }
+    };
+
+    // const size = Math.min(box.height * 0.25, 180);
+    // console.log({ size });
+    // setScrollableRect(size);
+  }, []);
+
   return (
-    <div className={`flex h-full flex-col ${settings.isFilming ? 'px-36 py-20' : ''}`}>
-      <div
-        className="flex flex-row gap-3 overflow-x-auto p-3 [scrollbar-color:theme(colors.sky.600)_theme(colors.sky.800)] [scrollbar-width:thin]"
-        ref={scrollableRef}
-      >
-        {data.columns.map((column) => (
-          <Column key={column.id} column={column} />
-        ))}
+    <>
+      <div className={`flex h-full flex-col ${settings.isFilming ? 'px-36 py-20' : ''}`}>
+        <div
+          className="flex flex-row gap-3 overflow-x-auto rounded border-4 border-purple-700 p-3 [scrollbar-color:theme(colors.sky.600)_theme(colors.sky.800)] [scrollbar-width:thin]"
+          ref={scrollableRef}
+        >
+          {data.columns.map((column) => (
+            <Column key={column.id} column={column} />
+          ))}
+        </div>
       </div>
-    </div>
+      {hitboxes != null ? (
+        <>
+          <div
+            style={
+              {
+                '--top': `${hitboxes['overflow'].top}px`,
+                '--left': `${hitboxes['overflow'].left}px`,
+                '--height': `${hitboxes['overflow'].height}px`,
+                '--width': `${hitboxes['overflow'].width}px`,
+              } as CSSProperties
+            }
+            className="pointer-events-none fixed left-[--left] top-[--top] flex h-[--height] w-[--width] flex-col items-end justify-center border-2 border-red-800 bg-red-200 font-bold text-red-500 opacity-80"
+          >
+            {/* Overflow */}
+          </div>
+          <div
+            style={
+              {
+                '--top': `${hitboxes['over-element-accelerate'].top}px`,
+                '--left': `${hitboxes['over-element-accelerate'].left}px`,
+                '--height': `${hitboxes['over-element-accelerate'].height}px`,
+                '--width': `${hitboxes['over-element-accelerate'].width}px`,
+              } as CSSProperties
+            }
+            className="pointer-events-none fixed left-[--left] top-[--top] flex h-[--height] w-[--width] flex-col items-center justify-center border bg-green-200 font-bold text-black opacity-80"
+          >
+            {/* Acceleration ↓ */}
+          </div>
+          <div
+            style={
+              {
+                '--top': `${hitboxes['over-element-max-speed'].top}px`,
+                '--left': `${hitboxes['over-element-max-speed'].left}px`,
+                '--height': `${hitboxes['over-element-max-speed'].height}px`,
+                '--width': `${hitboxes['over-element-max-speed'].width}px`,
+              } as CSSProperties
+            }
+            className="pointer-events-none fixed left-[--left] top-[--top] flex h-[--height] w-[--width] flex-col items-center justify-center bg-green-400 font-bold text-black opacity-80"
+          >
+            {/* Max speed */}
+          </div>
+        </>
+      ) : null}
+    </>
   );
 }
