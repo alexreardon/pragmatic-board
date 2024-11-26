@@ -15,7 +15,7 @@ const baseConfig = {
     left: 0.5,
   },
   // TODO: 300 - 400ms
-  timeDampeningDurationMs: 400,
+  timeDampeningDurationMs: 1200,
   // TODO: I think 220 feels better here.
   // Too big and it's too easy to trigger auto scrolling
   // Too small and it's too hard 😅
@@ -41,7 +41,7 @@ const maxPixelScrollPerSecond: {
   // What the value would be if we were scrolling at 15px per frame at 60fps.
   // This is the default as it works well for most experiences.
   // In certain scenarios though it can feel a bit slow.
-  standard: 15 * 60,
+  standard: 5 * 60,
   // What the value would be if we were scrolling at 25px per frame at 60fps.
   // This is not the default as it feels too fast for a lot of experiences.
   fast: 25 * 60,

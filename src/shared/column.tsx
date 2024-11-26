@@ -47,8 +47,9 @@ type TColumnState =
     };
 
 const stateStyles: { [Key in TColumnState['type']]: string } = {
-  idle: 'cursor-grab',
-  'is-card-over': 'outline outline-2 outline-neutral-50',
+  idle: 'cursor-grab bg-red-800',
+  'is-card-over':
+    'outline outline-2 outline-neutral-50 bg-green-800 transition-[background-color] duration-[1200ms] ease-linear',
   'is-dragging': 'opacity-40',
   'is-column-over': 'bg-slate-900',
 };
@@ -139,7 +140,7 @@ export function Column({ column }: { column: TColumn }) {
         canDrop({ source }) {
           return isDraggingACard({ source }) || isDraggingAColumn({ source });
         },
-        getIsSticky: () => true,
+        getIsSticky: () => false,
         onDragStart({ source, location }) {
           if (isCardData(source.data)) {
             setIsCardOver({ data: source.data, location });
