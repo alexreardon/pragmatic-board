@@ -21,7 +21,7 @@ function getInitialData(): TBoard {
     { id: 'column:a', title: 'Column A', cards: getCards({ amount: 60 }) },
   ];
 
-  const more: TColumn[] = Array.from({ length: 30 }, (_, index) => ({
+  const more: TColumn[] = Array.from({ length: 60 }, (_, index) => ({
     id: `column:${index}`,
     title: `Column ${index}`,
     cards: getCards({ amount: Math.round(30 + Math.random() * 4) }),
