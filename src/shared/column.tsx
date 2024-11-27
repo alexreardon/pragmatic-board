@@ -28,6 +28,7 @@ import { preserveOffsetOnSource } from '@atlaskit/pragmatic-drag-and-drop/elemen
 import { isSafari } from './is-safari';
 import { DragLocationHistory } from '@atlaskit/pragmatic-drag-and-drop/dist/types/internal-types';
 import { isShallowEqual } from './is-shallow-equal';
+import { blockBoardPanningAttr } from './data-attributes';
 
 type TColumnState =
   | {
@@ -53,6 +54,8 @@ const stateStyles: { [Key in TColumnState['type']]: string } = {
 };
 
 const idle = { type: 'idle' } satisfies TColumnState;
+
+export const columnInnerDataAttr = 'data-column-inner';
 
 /**
  * A memoized component for rendering out the card.
@@ -200,6 +203,7 @@ export function Column({ column }: { column: TColumn }) {
       <div
         className={`flex max-h-full flex-col rounded-lg bg-slate-800 text-neutral-50 ${stateStyles[state.type]}`}
         ref={innerRef}
+        {...{ [blockBoardPanningAttr]: true }}
       >
         {/* Extra wrapping element to make it easy to toggle visibility of content when a column is dragging over */}
         <div

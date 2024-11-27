@@ -11,7 +11,7 @@ import { reorder } from '@atlaskit/pragmatic-drag-and-drop/reorder';
 import { bindAll } from 'bind-event-listener';
 import { useEffect, useRef, useState } from 'react';
 import invariant from 'tiny-invariant';
-import { Column } from './column';
+import { Column, columnInnerDataAttr } from './column';
 import {
   isCardData,
   isCardDropTargetData,
@@ -21,6 +21,7 @@ import {
   TBoard,
   TColumn,
 } from './data';
+import { blockBoardPanningAttr } from './data-attributes';
 
 export function Board({ initial }: { initial: TBoard }) {
   const [data, setData] = useState(initial);
@@ -255,7 +256,7 @@ export function Board({ initial }: { initial: TBoard }) {
     );
   }, [data]);
 
-  // Custom click to scroll board
+  // Panning the board
   useEffect(() => {
     let cleanupActive: CleanupFn | null = null;
     const scrollable = scrollableRef.current;
@@ -351,7 +352,7 @@ export function Board({ initial }: { initial: TBoard }) {
             return;
           }
           // ignore interactive elements
-          if (event.target.closest('button,a,input')) {
+          if (event.target.closest(`[${blockBoardPanningAttr}]`)) {
             return;
           }
 
