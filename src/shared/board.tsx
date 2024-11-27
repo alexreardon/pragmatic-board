@@ -269,26 +269,6 @@ export function Board({ initial }: { initial: TBoard }) {
         window,
         [
           {
-            type: 'pointercancel',
-            listener: () => cleanupEvents(),
-          },
-          {
-            type: 'pointerup',
-            listener: () => cleanupEvents(),
-          },
-          {
-            type: 'pointerdown',
-            listener: () => cleanupEvents(),
-          },
-          {
-            type: 'keydown',
-            listener: () => cleanupEvents(),
-          },
-          {
-            type: 'resize',
-            listener: () => cleanupEvents(),
-          },
-          {
             type: 'pointermove',
             listener(event) {
               const currentX = event.clientX;
@@ -298,6 +278,10 @@ export function Board({ initial }: { initial: TBoard }) {
               scrollable?.scrollBy({ left: diffX });
             },
           },
+          // stop panning if we see any of these events
+          ...(
+            ['pointercancel', 'pointerup', 'pointerdown', 'keydown', 'resize', 'click'] as const
+          ).map((eventName) => ({ type: eventName, listener: () => cleanupEvents() })),
         ],
         // need to make sure we are not after the "pointerdown" on the scrollable
         // Also this is helpful to make sure we always hear about events from this point
