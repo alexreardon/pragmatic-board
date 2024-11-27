@@ -262,21 +262,8 @@ export function Board({ initial }: { initial: TBoard }) {
     const scrollable = scrollableRef.current;
     invariant(scrollable);
 
-    function begin({ start }: { start: Position }) {
-      type State =
-        | {
-            type: 'waiting-to-move-enough';
-            start: Position;
-          }
-        | {
-            type: 'scrolling';
-            last: Position;
-          };
-
-      let state: State = {
-        type: 'waiting-to-move-enough',
-        start,
-      };
+    function begin({ startX }: { startX: number }) {
+      let lastX = startX;
 
       const cleanupEvents = bindAll(
         window,
@@ -304,35 +291,11 @@ export function Board({ initial }: { initial: TBoard }) {
           {
             type: 'pointermove',
             listener(event) {
-              const current: Position = {
-                x: event.clientX,
-                y: event.clientY,
-              };
-              if (state.type === 'waiting-to-move-enough') {
-                const diff: Position = {
-                  x: state.start.x - current.x,
-                  y: state.start.y - current.y,
-                };
-                const hasMovedEnough = Math.abs(diff.x) > 10 || Math.abs(diff.y) > 10;
-                if (!hasMovedEnough) {
-                  return;
-                }
-                state = {
-                  type: 'scrolling',
-                  last: current,
-                };
-                return;
-              }
+              const currentX = event.clientX;
+              const diffX = lastX - currentX;
 
-              const diff: Position = {
-                x: state.last.x - current.x,
-                y: state.last.y - current.y,
-              };
-              state = {
-                type: 'scrolling',
-                last: current,
-              };
-              scrollable?.scrollBy({ left: diff.x, top: diff.y });
+              lastX = currentX;
+              scrollable?.scrollBy({ left: diffX });
             },
           },
         ],
@@ -356,7 +319,7 @@ export function Board({ initial }: { initial: TBoard }) {
             return;
           }
 
-          begin({ start: { x: event.clientX, y: event.clientY } });
+          begin({ startX: event.clientX });
         },
       },
     ]);
