@@ -280,7 +280,15 @@ export function Board({ initial }: { initial: TBoard }) {
           },
           // stop panning if we see any of these events
           ...(
-            ['pointercancel', 'pointerup', 'pointerdown', 'keydown', 'resize', 'click'] as const
+            [
+              'pointercancel',
+              'pointerup',
+              'pointerdown',
+              'keydown',
+              'resize',
+              'click',
+              'visibilitychange',
+            ] as const
           ).map((eventName) => ({ type: eventName, listener: () => cleanupEvents() })),
         ],
         // need to make sure we are not after the "pointerdown" on the scrollable
