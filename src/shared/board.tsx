@@ -259,6 +259,7 @@ export function Board({ initial }: { initial: TBoard }) {
   useEffect(() => {
     let cleanupActive: CleanupFn | null = null;
     const scrollable = scrollableRef.current;
+    invariant(scrollable);
 
     function begin({ start }: { start: Position }) {
       type State =
@@ -276,70 +277,84 @@ export function Board({ initial }: { initial: TBoard }) {
         start,
       };
 
-      const cleanupEvents = bindAll(window, [
-        {
-          type: 'pointercancel',
-          listener: () => cleanupEvents(),
-        },
-        {
-          type: 'pointerup',
-          listener: () => cleanupEvents(),
-        },
-        {
-          type: 'pointerdown',
-          listener: () => cleanupEvents(),
-        },
-        {
-          type: 'keydown',
-          listener: () => cleanupEvents(),
-        },
-        {
-          type: 'resize',
-          listener: () => cleanupEvents(),
-        },
-        {
-          type: 'pointermove',
-          listener(event) {
-            const current: Position = {
-              x: event.clientX,
-              y: event.clientY,
-            };
-            if (state.type === 'waiting-to-move-enough') {
-              const diff: Position = {
-                x: state.start.x - current.x,
-                y: state.start.y - current.y,
+      const cleanupEvents = bindAll(
+        window,
+        [
+          {
+            type: 'pointercancel',
+            listener: () => cleanupEvents(),
+          },
+          {
+            type: 'pointerup',
+            listener: () => cleanupEvents(),
+          },
+          {
+            type: 'pointerdown',
+            listener: () => cleanupEvents(),
+          },
+          {
+            type: 'keydown',
+            listener: () => cleanupEvents(),
+          },
+          {
+            type: 'resize',
+            listener: () => cleanupEvents(),
+          },
+          {
+            type: 'pointermove',
+            listener(event) {
+              const current: Position = {
+                x: event.clientX,
+                y: event.clientY,
               };
-              const hasMovedEnough = Math.abs(diff.x) > 10 || Math.abs(diff.y) > 10;
-              if (!hasMovedEnough) {
+              if (state.type === 'waiting-to-move-enough') {
+                const diff: Position = {
+                  x: state.start.x - current.x,
+                  y: state.start.y - current.y,
+                };
+                const hasMovedEnough = Math.abs(diff.x) > 10 || Math.abs(diff.y) > 10;
+                if (!hasMovedEnough) {
+                  return;
+                }
+                state = {
+                  type: 'scrolling',
+                  last: current,
+                };
                 return;
               }
+
+              const diff: Position = {
+                x: state.last.x - current.x,
+                y: state.last.y - current.y,
+              };
               state = {
                 type: 'scrolling',
                 last: current,
               };
-              return;
-            }
-
-            const diff: Position = {
-              x: state.last.x - current.x,
-              y: state.last.y - current.y,
-            };
-            state = {
-              type: 'scrolling',
-              last: current,
-            };
-            scrollable?.scrollBy({ left: diff.x, top: diff.y });
+              scrollable?.scrollBy({ left: diff.x, top: diff.y });
+            },
           },
-        },
-      ]);
+        ],
+        // need to make sure we are not after the "pointerdown" on the scrollable
+        // Also this is helpful to make sure we always hear about events from this point
+        { capture: true },
+      );
 
       cleanupActive = cleanupEvents;
     }
 
-    const cleanupStart = bindAll(window, [
+    const cleanupStart = bindAll(scrollable, [
       {
         type: 'pointerdown',
         listener(event) {
+          if (!(event.target instanceof HTMLElement)) {
+            return;
+          }
+          // ignore interactive elements
+          if (event.target.closest('button,a,input')) {
+            return;
+          }
+
           begin({ start: { x: event.clientX, y: event.clientY } });
         },
       },

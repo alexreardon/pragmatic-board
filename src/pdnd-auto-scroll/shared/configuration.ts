@@ -7,7 +7,6 @@ const baseConfig = {
     bottom: 0.25,
     left: 0.25,
   },
-  // TODO: rename? inaccurate name?
   maxScrollAtPercentageRemainingOfHitbox: {
     top: 0.5,
     right: 0.5,
