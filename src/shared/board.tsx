@@ -19,6 +19,8 @@ import {
   TColumn,
 } from './data';
 import { unsafeOverflowAutoScrollForElements } from '@/pdnd-auto-scroll/entry-point/unsafe-overflow/element';
+import { bindAll } from 'bind-event-listener';
+import { CleanupFn, Position } from '@atlaskit/pragmatic-drag-and-drop/dist/types/internal-types';
 
 export function Board({ initial }: { initial: TBoard }) {
   const [data, setData] = useState(initial);
@@ -252,6 +254,93 @@ export function Board({ initial }: { initial: TBoard }) {
       }),
     );
   }, [data]);
+
+  useEffect(() => {
+    let cleanupActive: CleanupFn | null = null;
+    const scrollable = scrollableRef.current;
+
+    function begin({ start }: { start: Position }) {
+      type State =
+        | {
+            type: 'waiting-to-move-enough';
+            start: Position;
+          }
+        | {
+            type: 'scrolling';
+            last: Position;
+          };
+
+      let state: State = {
+        type: 'waiting-to-move-enough',
+        start,
+      };
+
+      const cleanupEvents = bindAll(window, [
+        {
+          type: 'pointercancel',
+          listener() {
+            cleanupActive?.();
+          },
+        },
+        {
+          type: 'pointerup',
+          listener() {
+            cleanupActive?.();
+          },
+        },
+        {
+          type: 'pointermove',
+          listener(event) {
+            const current: Position = {
+              x: event.clientX,
+              y: event.clientY,
+            };
+            if (state.type === 'waiting-to-move-enough') {
+              const diff: Position = {
+                x: state.start.x - current.x,
+                y: state.start.y - current.y,
+              };
+              const hasMovedEnough = Math.abs(diff.x) > 10 || Math.abs(diff.y) > 10;
+              if (!hasMovedEnough) {
+                return;
+              }
+              state = {
+                type: 'scrolling',
+                last: current,
+              };
+              return;
+            }
+
+            const diff: Position = {
+              x: state.last.x - current.x,
+              y: state.last.y - current.y,
+            };
+            state = {
+              type: 'scrolling',
+              last: current,
+            };
+            scrollable?.scrollBy({ left: diff.x, top: diff.y });
+          },
+        },
+      ]);
+
+      cleanupActive = cleanupEvents;
+    }
+
+    const cleanupStart = bindAll(window, [
+      {
+        type: 'pointerdown',
+        listener(event) {
+          begin({ start: { x: event.clientX, y: event.clientY } });
+        },
+      },
+    ]);
+
+    return function cleanupAll() {
+      cleanupStart();
+      cleanupActive?.();
+    };
+  }, []);
 
   return (
     <div
