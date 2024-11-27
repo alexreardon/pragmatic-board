@@ -276,18 +276,26 @@ export function Board({ initial }: { initial: TBoard }) {
         start,
       };
 
-      cleanupActive = bindAll(window, [
+      const cleanupEvents = bindAll(window, [
         {
           type: 'pointercancel',
-          listener() {
-            cleanupActive?.();
-          },
+          listener: () => cleanupEvents(),
         },
         {
           type: 'pointerup',
-          listener() {
-            cleanupActive?.();
-          },
+          listener: () => cleanupEvents(),
+        },
+        {
+          type: 'pointerdown',
+          listener: () => cleanupEvents(),
+        },
+        {
+          type: 'keydown',
+          listener: () => cleanupEvents(),
+        },
+        {
+          type: 'resize',
+          listener: () => cleanupEvents(),
         },
         {
           type: 'pointermove',
@@ -324,6 +332,8 @@ export function Board({ initial }: { initial: TBoard }) {
           },
         },
       ]);
+
+      cleanupActive = cleanupEvents;
     }
 
     const cleanupStart = bindAll(window, [
@@ -343,7 +353,7 @@ export function Board({ initial }: { initial: TBoard }) {
 
   return (
     <div
-      className="flex h-full flex-row gap-3 overflow-x-auto p-3 [scrollbar-color:theme(colors.sky.600)_theme(colors.sky.800)] [scrollbar-width:thin]"
+      className="flex h-full flex-row gap-3 overflow-x-auto p-3 [overflow-anchor:none] [scrollbar-color:theme(colors.sky.600)_theme(colors.sky.800)] [scrollbar-width:thin]"
       ref={scrollableRef}
     >
       {data.columns.map((column) => (
