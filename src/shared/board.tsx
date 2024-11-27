@@ -1,12 +1,15 @@
 'use client';
 
 import { autoScrollForElements } from '@/pdnd-auto-scroll/entry-point/element';
+import { unsafeOverflowAutoScrollForElements } from '@/pdnd-auto-scroll/entry-point/unsafe-overflow/element';
 import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
 import { reorderWithEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/util/reorder-with-edge';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
+import { CleanupFn, Position } from '@atlaskit/pragmatic-drag-and-drop/dist/types/internal-types';
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { reorder } from '@atlaskit/pragmatic-drag-and-drop/reorder';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { bindAll } from 'bind-event-listener';
+import { useEffect, useRef, useState } from 'react';
 import invariant from 'tiny-invariant';
 import { Column } from './column';
 import {
@@ -18,9 +21,6 @@ import {
   TBoard,
   TColumn,
 } from './data';
-import { unsafeOverflowAutoScrollForElements } from '@/pdnd-auto-scroll/entry-point/unsafe-overflow/element';
-import { bindAll } from 'bind-event-listener';
-import { CleanupFn, Position } from '@atlaskit/pragmatic-drag-and-drop/dist/types/internal-types';
 
 export function Board({ initial }: { initial: TBoard }) {
   const [data, setData] = useState(initial);
@@ -255,6 +255,7 @@ export function Board({ initial }: { initial: TBoard }) {
     );
   }, [data]);
 
+  // Custom click to scroll board
   useEffect(() => {
     let cleanupActive: CleanupFn | null = null;
     const scrollable = scrollableRef.current;
@@ -275,7 +276,7 @@ export function Board({ initial }: { initial: TBoard }) {
         start,
       };
 
-      const cleanupEvents = bindAll(window, [
+      cleanupActive = bindAll(window, [
         {
           type: 'pointercancel',
           listener() {
@@ -323,8 +324,6 @@ export function Board({ initial }: { initial: TBoard }) {
           },
         },
       ]);
-
-      cleanupActive = cleanupEvents;
     }
 
     const cleanupStart = bindAll(window, [
