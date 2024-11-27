@@ -28,7 +28,6 @@ import { preserveOffsetOnSource } from '@atlaskit/pragmatic-drag-and-drop/elemen
 import { isSafari } from './is-safari';
 import { DragLocationHistory } from '@atlaskit/pragmatic-drag-and-drop/dist/types/internal-types';
 import { isShallowEqual } from './is-shallow-equal';
-import { SettingsContext } from './settings-context';
 
 type TColumnState =
   | {
@@ -69,7 +68,6 @@ export function Column({ column }: { column: TColumn }) {
   const outerFullHeightRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLDivElement | null>(null);
   const innerRef = useRef<HTMLDivElement | null>(null);
-  const { settings } = useContext(SettingsContext);
   const [state, setState] = useState<TColumnState>(idle);
 
   useEffect(() => {
@@ -171,30 +169,14 @@ export function Column({ column }: { column: TColumn }) {
         },
       }),
       autoScrollForElements({
-        canScroll({ source }) {
-          if (!settings.isOverElementAutoScrollEnabled) {
-            return false;
-          }
-
-          return isDraggingACard({ source });
-        },
-        getConfiguration: () => ({ maxScrollSpeed: settings.columnScrollSpeed }),
+        canScroll: isDraggingACard,
+        getConfiguration: () => ({ maxScrollSpeed: 'standard' }),
         element: scrollable,
       }),
       unsafeOverflowAutoScrollForElements({
         element: scrollable,
-        getConfiguration: () => ({ maxScrollSpeed: settings.columnScrollSpeed }),
-        canScroll({ source }) {
-          if (!settings.isOverElementAutoScrollEnabled) {
-            return false;
-          }
-
-          if (!settings.isOverflowScrollingEnabled) {
-            return false;
-          }
-
-          return isDraggingACard({ source });
-        },
+        getConfiguration: () => ({ maxScrollSpeed: 'standard' }),
+        canScroll: isDraggingACard,
         getOverflow() {
           return {
             fromTopEdge: {
@@ -211,7 +193,7 @@ export function Column({ column }: { column: TColumn }) {
         },
       }),
     );
-  }, [column, settings]);
+  }, [column]);
 
   return (
     <div className="flex w-72 flex-shrink-0 select-none flex-col" ref={outerFullHeightRef}>

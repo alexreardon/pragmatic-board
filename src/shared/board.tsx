@@ -18,13 +18,11 @@ import {
   TBoard,
   TColumn,
 } from './data';
-import { SettingsContext } from './settings-context';
 import { unsafeOverflowAutoScrollForElements } from '@/pdnd-auto-scroll/entry-point/unsafe-overflow/element';
 
 export function Board({ initial }: { initial: TBoard }) {
   const [data, setData] = useState(initial);
   const scrollableRef = useRef<HTMLDivElement | null>(null);
-  const { settings } = useContext(SettingsContext);
 
   useEffect(() => {
     const element = scrollableRef.current;
@@ -229,30 +227,14 @@ export function Board({ initial }: { initial: TBoard }) {
         },
       }),
       autoScrollForElements({
-        canScroll({ source }) {
-          if (!settings.isOverElementAutoScrollEnabled) {
-            return false;
-          }
-
-          return isDraggingACard({ source }) || isDraggingAColumn({ source });
-        },
-        getConfiguration: () => ({ maxScrollSpeed: settings.boardScrollSpeed }),
+        canScroll: ({ source }) => isDraggingACard({ source }) || isDraggingAColumn({ source }),
+        getConfiguration: () => ({ maxScrollSpeed: 'fast' }),
         element,
       }),
       unsafeOverflowAutoScrollForElements({
         element,
-        getConfiguration: () => ({ maxScrollSpeed: settings.boardScrollSpeed }),
-        canScroll({ source }) {
-          if (!settings.isOverElementAutoScrollEnabled) {
-            return false;
-          }
-
-          if (!settings.isOverflowScrollingEnabled) {
-            return false;
-          }
-
-          return isDraggingACard({ source }) || isDraggingAColumn({ source });
-        },
+        getConfiguration: () => ({ maxScrollSpeed: 'fast' }),
+        canScroll: ({ source }) => isDraggingACard({ source }) || isDraggingAColumn({ source }),
         getOverflow() {
           return {
             fromLeftEdge: {
@@ -269,18 +251,16 @@ export function Board({ initial }: { initial: TBoard }) {
         },
       }),
     );
-  }, [data, settings]);
+  }, [data]);
 
   return (
-    <div className={`flex h-full flex-col ${settings.isFilming ? 'px-36 py-20' : ''}`}>
-      <div
-        className="flex h-full flex-row gap-3 overflow-x-auto p-3 [scrollbar-color:theme(colors.sky.600)_theme(colors.sky.800)] [scrollbar-width:thin]"
-        ref={scrollableRef}
-      >
-        {data.columns.map((column) => (
-          <Column key={column.id} column={column} />
-        ))}
-      </div>
+    <div
+      className="flex h-full flex-row gap-3 overflow-x-auto p-3 [scrollbar-color:theme(colors.sky.600)_theme(colors.sky.800)] [scrollbar-width:thin]"
+      ref={scrollableRef}
+    >
+      {data.columns.map((column) => (
+        <Column key={column.id} column={column} />
+      ))}
     </div>
   );
 }
