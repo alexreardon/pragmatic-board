@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 import { bindAll } from 'bind-event-listener';
 import { PanelTopClose, PanelTopOpen, Settings } from 'lucide-react';
 import Link from 'next/link';
@@ -55,25 +57,47 @@ export function TopBar() {
 
   return (
     <>
-      <header className="flex h-12 flex-row items-center gap-3 border-b bg-sky-800 px-3 leading-4 text-white">
-        {links.map((link) => (
+      <header className="flex h-12 flex-row items-center justify-between gap-3 border-b bg-sky-800 px-3 leading-4 text-white">
+        <div>
+          {links.map((link) => (
+            <Link
+              href={link.href}
+              key={link.href}
+              className={`rounded p-2 font-bold hover:bg-sky-700 active:bg-sky-600 ${pathname === link.href ? 'bg-blue-900' : ''}`}
+            >
+              {link.title}
+            </Link>
+          ))}
+        </div>
+        <div className="flex flex-row items-center gap-2">
           <Link
-            href={link.href}
-            key={link.href}
-            className={`rounded p-2 font-bold hover:bg-sky-700 active:bg-sky-600 ${pathname === link.href ? 'bg-blue-900' : ''}`}
+            href="https://bsky.app/profile/alexreardon.bsky.social"
+            target="_blank"
+            aria-label="Alex Reardon's BlueSky profile"
+            className=""
           >
-            {link.title}
+            <Image
+              role="presentation"
+              src="/avatar.webp"
+              alt="Profile"
+              width={30}
+              height={30}
+              className="box-border h-fit max-w-none overflow-hidden rounded border border-green-200 outline-neutral-50 hover:outline hover:contrast-125"
+              priority
+              quality={100}
+              draggable="false"
+            />
           </Link>
-        ))}
-        <button
-          type="button"
-          ref={settingsTriggerRef}
-          className="ml-auto rounded p-2 text-white hover:bg-sky-700 active:bg-sky-600"
-          onClick={() => setIsSettingsDialogOpen((current) => !current)}
-          aria-label="toggle top bar visibility"
-        >
-          <Settings size={16} />
-        </button>
+          <button
+            type="button"
+            ref={settingsTriggerRef}
+            className="rounded p-2 text-white hover:bg-sky-700 active:bg-sky-600"
+            onClick={() => setIsSettingsDialogOpen((current) => !current)}
+            aria-label="toggle top bar visibility"
+          >
+            <Settings size={16} />
+          </button>
+        </div>
       </header>
       {isSettingsDialogOpen ? <SettingsDialog ref={settingsDialogRef} /> : null}
     </>
